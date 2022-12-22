@@ -10,7 +10,7 @@ import UIKit
 class PhoneNumberFormatterViewController: UIViewController {
     
     private lazy var phoneTextField: JNumberMaskTextField = {
-        let field = JNumberMaskTextField(type: .cardNumber(mask: "XXXX XXXX XXXX XXXX"))
+        let field = JNumberMaskTextField(type: .phoneNumber(mask: "XXX XXX XX XX", countryCode: "7"))
         field.textColor = .lightGray
         field.font = .systemFont(ofSize: 27)
         field.keyboardType = .numberPad

@@ -106,25 +106,31 @@ extension JNumberMaskTextField: UITextFieldDelegate {
         var newString = (oldString as NSString).replacingCharacters(in: range, with: string)
         let pastedDigitsCount = string.digits.count
         
-        if textField.text?.isEmpty == true {
-            switch formattingType {
-            case .phoneNumber:
-                textField.text = setInitialValue()
-            default:
-                textField.text = newString
-            }
-            return false
-        }
+//        if textField.text?.isEmpty == true {
+//            switch formattingType {
+//            case .phoneNumber:
+//                textField.text = setInitialValue()
+//            default:
+//                textField.text = newString
+//            }
+//            return false
+//        }
+        
         
         if pastedDigitsCount > 1 {
             switch formattingType {
             case .cardNumber:
-                guard oldString.digits.count + pastedDigitsCount < maxNumberLimit else { return false }
+                guard oldString.digits.count + pastedDigitsCount < maxNumberLimit else {
+                    self.resignFirstResponder()
+                    return false
+                    
+                }
                 copiedDigitsCount = pastedDigitsCount
                 newString = (oldString as NSString).replacingCharacters(in: range, with: string)
                 
             case .phoneNumber:
                 newString = (oldString as NSString).replacingCharacters(in: range, with: getValidatedString(with: formattingType.countryCode!, pasted: string))
+                copiedDigitsCount = pastedDigitsCount
             }
 
         } else {
@@ -145,6 +151,11 @@ extension JNumberMaskTextField: UITextFieldDelegate {
     
     
     public func textFieldDidChangeSelection(_ textField: UITextField) {
+        
+        if textField.text?.isEmpty == true {
+            textField.resignFirstResponder()
+        }
+        
         getCurrentPosition(textField: textField)
     }
 }
