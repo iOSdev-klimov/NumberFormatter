@@ -9,14 +9,33 @@ import UIKit
 
 class PhoneNumberFormatterViewController: UIViewController {
     
-    private lazy var phoneTextField: JNumberMaskTextField = {
-        let field = JNumberMaskTextField(type: .phoneNumber(mask: "XXX XXX XX XX", countryCode: "7"))
+    private lazy var cardTextField: JNumberMaskTextField = {
+        let field = JNumberMaskTextField(type: .card)
         field.textColor = .lightGray
         field.font = .systemFont(ofSize: 27)
         field.keyboardType = .numberPad
         field.layer.borderColor = UIColor.orange.cgColor
         field.layer.borderWidth = 2
-        field.placeholder = "Enter"
+        field.placeholder = "Enter card number"
+        return field
+    }()
+    private lazy var phoneTextField: JNumberMaskTextField = {
+        let field = JNumberMaskTextField(type: .phone)
+        field.textColor = .lightGray
+        field.maskString = "XXX XXX XX XX"
+        field.font = .systemFont(ofSize: 27)
+        field.keyboardType = .numberPad
+        field.layer.borderColor = UIColor.orange.cgColor
+        field.layer.borderWidth = 2
+        field.placeholder = "Enter phone"
+        return field
+    }()
+    private lazy var codeField: UITextField = {
+        let field = UITextField()
+        field.font = .systemFont(ofSize: 27)
+        field.text = "+7"
+        field.textColor = .lightGray
+        field.delegate = self
         return field
     }()
 
@@ -30,7 +49,7 @@ class PhoneNumberFormatterViewController: UIViewController {
         view.addSubview(phoneTextField)
         phoneTextField.delegate = self
         phoneTextField.translatesAutoresizingMaskIntoConstraints = false
-        
+        phoneTextField.code = "31"
         NSLayoutConstraint.activate([
             phoneTextField.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             phoneTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
@@ -40,4 +59,7 @@ class PhoneNumberFormatterViewController: UIViewController {
 }
 
 
-extension PhoneNumberFormatterViewController: UITextFieldDelegate { }
+extension PhoneNumberFormatterViewController: UITextFieldDelegate {
+    
+    
+}

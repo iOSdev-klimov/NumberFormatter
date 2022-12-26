@@ -9,41 +9,34 @@ import UIKit
 
 
 open class JNumberMaskTextField: UITextField {
-    
+ 
     public enum NumberFormatterType {
-        case cardNumber(mask: String)
-        case phoneNumber(mask: String, countryCode: String, hasCountryParenthesis: Bool = false)
-        
-        var mask: String {
-            switch self {
-            case let .cardNumber(mask):                           return mask
-            case let .phoneNumber(mask, _, _):                    return mask
+        case card
+        case phone
+    }
+
+    public var maskString: String? {
+        didSet {
+            guard maskString != nil else {
+                return
             }
+            setNewMask()
         }
-        
-        var countryCode: String? {
-            switch self {
-            case .cardNumber:                                     return nil
-            case let .phoneNumber(_, code, _):                    return code
+    }
+    
+    public var code: String? {
+        didSet {
+            guard formattingType == .phone else {
+                return
             }
-        }
-        
-        var hasCountryParenthesis: Bool {
-            switch self {
-            case .cardNumber:                                     return false
-            case let .phoneNumber(_, _, hasCountryParenthesis):   return hasCountryParenthesis
-            }
+//            getInitialValue()
+            setSpacePositions()
         }
     }
 
     private let formattingType: NumberFormatterType
-    private var initialMask: String
-    private var countryCode: String?
-    private var hasCountryParenthesis: Bool
-
     private var whitespacePositions: [Int] = []
     private var bracketPositions: [Int] = []
-
     private var currentCursorPosition = 0
     private var separatorCharacters: [Character] = ["-", " "]
     private var copiedDigitsCount = 0
@@ -53,7 +46,7 @@ open class JNumberMaskTextField: UITextField {
         get {
             return self.maskDelegate
         }
-        
+
         set {
             self.maskDelegate = newValue
             super.delegate = self
@@ -61,28 +54,22 @@ open class JNumberMaskTextField: UITextField {
     }
     
     private var minPastedDigits: Int {
-        print("❎; ", initialMask.filter { $0 == "X" }.count)
-        return initialMask.filter { $0 == "X" }.count
+        return (maskString ?? "").filter { $0 == "X" }.count
     }
-    private var newMask: String {
-        setNewMask()
-    }
+
     private var maxDigitLimit: Int {
         switch formattingType {
-        case .cardNumber:
+        case .card:
             return minPastedDigits + 1
-        case .phoneNumber:
-            return (countryCode?.digits.count ?? 0) + minPastedDigits + 1
+        case .phone:
+            return ((code ?? "").digits.count) + minPastedDigits + 1
         }
     }
     
     init(type: NumberFormatterType) {
         formattingType = type
-        initialMask = type.mask
-        countryCode = type.countryCode
-        hasCountryParenthesis = type.hasCountryParenthesis
         super.init(frame: .zero)
-        getSpacePositions()
+        setSpacePositions()
     }
     
     required public init?(coder: NSCoder) {
@@ -95,7 +82,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
     
     public func textFieldDidBeginEditing(_ textField: UITextField) {
         if textField.text?.isEmpty == true {
-            textField.text = setInitialValue()
+            textField.text = getInitialValue()
         }
     }
     
@@ -112,25 +99,19 @@ extension JNumberMaskTextField: UITextFieldDelegate {
 
         if pastedDigitsCount > 1 {
             switch formattingType {
-            case .cardNumber:
+            case .card:
                 guard oldString.digits.count + pastedDigitsCount < maxDigitLimit else {
                     copiedDigitsCount = 0
                     return false
                 }
                 newString = (oldString as NSString).replacingCharacters(in: range, with: string)
                 
-            case .phoneNumber:
-                
-                print("pastedDigits:", pastedDigitsCount)
-                print("Old string:", oldString.digits)
-                print("Old stringCount:", oldString.digits.count)
-                
-                
-                guard (oldString.digits.count + pastedDigitsCount < maxDigitLimit) else {
+            case .phone:
+                guard (oldString.digits.count + pastedDigitsCount < maxDigitLimit) || pastedDigitsCount == maxDigitLimit - 1 else {
                     copiedDigitsCount = 0
                     return false
                 }
-                newString = (oldString as NSString).replacingCharacters(in: range, with: getValidatedString(with: formattingType.countryCode!, pasted: string))
+                newString = (oldString as NSString).replacingCharacters(in: range, with: getValidatedString(with: code ?? "", pasted: string))
             }
             
             copiedDigitsCount = pastedDigitsCount
@@ -141,21 +122,22 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                 return false
             }
         }
-        
-        textField.text = newString.formatPhoneWithMask(mask: newMask)
-        
+
+        textField.text = newString.formatPhoneWithMask(mask: setNewMask())
+
+        getCurrentPosition(textField: textField)
+
         setRemainingCursorMoveLeft(pastedString: string, currentLocation: currentCursorPosition)
         
-        setCursorToEndIfNeeded(using: textField.text ?? "", pasted: string)
-        
+        setcursorToEndIfNeeded(number: textField.text ?? "", isEmptyString: string.isEmpty)
+
         return false
     }
-    
     
     public func textFieldDidChangeSelection(_ textField: UITextField) {
         
         if textField.text?.isEmpty == true {
-            textField.resignFirstResponder()
+            textField.text = getInitialValue()
         }
         
         getCurrentPosition(textField: textField)
@@ -171,7 +153,7 @@ extension JNumberMaskTextField {
         if stringDigits.count <= minPastedDigits {
             return stringDigits
             
-        } else if stringDigits.count < maxDigitLimit && String(stringDigits.suffix(minPastedDigits)).hasPrefix(countryCode) {
+        } else if stringDigits.count < maxDigitLimit && stringDigits.hasPrefix(code ?? "") {
             return String(stringDigits.suffix(minPastedDigits))
         }
         
@@ -199,8 +181,8 @@ extension JNumberMaskTextField {
     }
     
     private func setRemainingCursorMoveLeft(pastedString: String, currentLocation: Int) {
-        guard pastedString.digits.count > 1 else { return }
-        
+        guard copiedDigitsCount > 0 else { return }
+
         let now = currentLocation
         let next = currentLocation + pastedString.digits.count
 
@@ -212,12 +194,11 @@ extension JNumberMaskTextField {
         }
 
         let offset = next + additionalOffset
+
         setCursorLocation(withOffset: offset)
         copiedDigitsCount = 0
     }
-    
-    
-    
+
     private func getCurrentPosition(textField: UITextField) {
         DispatchQueue.main.async {
             if let selectedRange = textField.selectedTextRange {
@@ -226,23 +207,30 @@ extension JNumberMaskTextField {
         }
     }
 
-    private func setInitialValue() -> String {
-        guard let countryCode = formattingType.countryCode else { return "" }
-        let updatedCountryCode = formattingType.hasCountryParenthesis ? "(\(countryCode)) " : "\(countryCode) "
-        return "+" + updatedCountryCode
+    private func getInitialValue() -> String {
+        let initialValue = formattingType == .phone ? "+\(code ?? "") " : ""
+        return initialValue
     }
 
     private func setNewMask() -> String {
-        let maskedCountryCode = setInitialValue().replacingOccurrences(of: "[0-9]", with: "X", options: .regularExpression)
-        return maskedCountryCode + initialMask
+        var updatedCode = ""
+        if formattingType == .phone {
+            updatedCode = getInitialValue().replacingOccurrences(of: "[0-9]", with: "X", options: .regularExpression)
+        }
+
+        print("newphone mask", updatedCode + (maskString ?? ""))
+        print("min", minPastedDigits)
+        print("max", maxDigitLimit)
+        
+        return updatedCode + (maskString ?? "")
     }
 
     private func isSpaceIncluded(within range: NSRange) -> Bool {
         whitespacePositions.contains(range.location) || bracketPositions.contains(range.location)
     }
-    
-    private func getSpacePositions() {
-        newMask.enumerated().forEach { index, char in
+
+    private func setSpacePositions() {
+        setNewMask().enumerated().forEach { index, char in
             if separatorCharacters.contains(char) {
                 whitespacePositions.append(index)
                 
@@ -261,16 +249,13 @@ extension JNumberMaskTextField {
         }
     }
     
-    private func setCursorToEndIfNeeded(using phoneNumber: String, pasted: String) {
-        var selectedMask = newMask
-
-        switch formattingType {
-        case .cardNumber:   selectedMask = initialMask
-        default:            break
-        }
+    
+    private func setcursorToEndIfNeeded(number: String, isEmptyString: Bool) {
         
-        if phoneNumber.count == selectedMask.count && !pasted.isEmpty {
-            setCursorLocation(withOffset: phoneNumber.endIndex.utf16Offset(in: phoneNumber))
+        let selectedMask = setNewMask()
+        
+        if number.count == selectedMask.count && !isEmptyString {
+            setCursorLocation(withOffset: selectedMask.endIndex.utf16Offset(in: selectedMask))
         }
     }
 }
