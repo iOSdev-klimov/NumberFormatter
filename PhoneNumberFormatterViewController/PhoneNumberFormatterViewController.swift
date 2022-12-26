@@ -16,6 +16,7 @@ class PhoneNumberFormatterViewController: UIViewController {
         field.keyboardType = .numberPad
         field.layer.borderColor = UIColor.orange.cgColor
         field.layer.borderWidth = 2
+        field.maskString = "XXXX XXXX XXXX XXXX"
         field.placeholder = "Enter card number"
         return field
     }()
@@ -49,12 +50,22 @@ class PhoneNumberFormatterViewController: UIViewController {
         view.addSubview(phoneTextField)
         phoneTextField.delegate = self
         phoneTextField.translatesAutoresizingMaskIntoConstraints = false
-        phoneTextField.code = "31"
         NSLayoutConstraint.activate([
             phoneTextField.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             phoneTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
             phoneTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -15)
         ])
+        
+      
+//        view.addSubview(cardTextField)
+//        cardTextField.delegate = self
+//        cardTextField.translatesAutoresizingMaskIntoConstraints = false
+//        NSLayoutConstraint.activate([
+//            cardTextField.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+//            cardTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 15),
+//            cardTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -15)
+//        ])
+//
     }
 }
 
