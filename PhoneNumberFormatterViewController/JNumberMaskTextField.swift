@@ -17,16 +17,21 @@ open class JNumberMaskTextField: UITextField {
     
     public var maskString: String? {
         didSet {
+            whitespacePositions.removeAll()
+            bracketPositions.removeAll()
             setSpacePositions()
         }
     }
     
     public var code: String? {
         didSet {
-            guard formattingType == .phone else {
+            guard formattingType == .phone,
+                  let _ = code else {
                 return
             }
-            getInitialValue()
+            whitespacePositions.removeAll()
+            bracketPositions.removeAll()
+            setSpacePositions()
         }
     }
     
@@ -74,7 +79,7 @@ open class JNumberMaskTextField: UITextField {
 
 
 extension JNumberMaskTextField: UITextFieldDelegate {
-    
+
     public func textFieldDidBeginEditing(_ textField: UITextField) {
         if textField.text?.isEmpty == true {
             textField.text = getInitialValue()
@@ -100,42 +105,37 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                     return false
                 }
                 newString = (oldString as NSString).replacingCharacters(in: range, with: string)
+                copiedDigitsCount = pastedDigitsCount
                 
             case .phone:
-                // (formattingType == .phone && range.location >= getInitialValue().count - 1)
                 guard ((oldString.digits.count + pastedDigitsCount < maxDigitLimit) || pastedDigitsCount == maxDigitLimit - 1) else {
                     copiedDigitsCount = 0
                     return false
                 }
                 newString = (oldString as NSString).replacingCharacters(in: range, with: getValidatedString(with: code ?? "", pasted: string))
+                copiedDigitsCount = pastedDigitsCount
             }
-            
-            copiedDigitsCount = pastedDigitsCount
-            
+
         } else {
             if range.location < oldString.count,
                !configureCursorLocation(updatedText: newString, currentText: oldString, with: range) {
                 return false
             }
         }
+
         textField.text = newString.formatPhoneWithMask(mask: setNewMask())
-        
-        getCurrentPosition(textField: textField)
-        
         setRemainingCursorMoveLeft(pastedString: string, currentPosition: currentCursorPosition)
-        
-        setcursorToEndIfNeeded(number: textField.text ?? "", isStringEmpty: string.isEmpty)
         
         return false
     }
     
     public func textFieldDidChangeSelection(_ textField: UITextField) {
         
+        getCurrentPosition(textField: textField)
+        
         if textField.text?.isEmpty == true {
             textField.text = getInitialValue()
         }
-        
-        //        getCurrentPosition(textField: textField)
     }
 }
 
@@ -180,17 +180,16 @@ extension JNumberMaskTextField {
         
         let current = currentPosition
         let next = currentPosition + pastedString.digits.count
-        
+
         var additionalOffset = 0
         for pos in current...next  {
             if whitespacePositions.contains(pos) {
                 additionalOffset += 1
             }
         }
-        
-        var offset = next + additionalOffset
-        
-        
+
+        let offset = next + additionalOffset
+
         setCursorLocation(withOffset: offset)
         copiedDigitsCount = 0
     }
@@ -240,9 +239,6 @@ extension JNumberMaskTextField {
                 bracketPositions.append(index)
             }
         }
-        
-        print("whitespaces", whitespacePositions)
-        print("setNewmask", setNewMask())
     }
     
     private func setCursorLocation(withOffset offset: Int) {
@@ -251,16 +247,6 @@ extension JNumberMaskTextField {
         
         DispatchQueue.main.async {
             self.selectedTextRange = self.textRange(from: startPosition, to: endPosition)
-        }
-    }
-    
-    
-    private func setcursorToEndIfNeeded(number: String, isStringEmpty: Bool) {
-        
-        let selectedMask = setNewMask()
-        
-        if number.count == selectedMask.count && !isStringEmpty {
-            setCursorLocation(withOffset: selectedMask.endIndex.utf16Offset(in: selectedMask))
         }
     }
 }
