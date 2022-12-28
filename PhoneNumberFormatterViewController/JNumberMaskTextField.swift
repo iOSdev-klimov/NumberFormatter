@@ -67,6 +67,8 @@ open class JNumberMaskTextField: UITextField {
         }
     }
     
+    private var isCursorupdated = true
+    
     init(type: NumberFormatterType) {
         formattingType = type
         super.init(frame: .zero)
@@ -96,7 +98,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
         let oldString = textField.text ?? ""
         var newString = (oldString as NSString).replacingCharacters(in: range, with: string)
         let pastedDigitsCount = string.digits.count
-        
+
         if pastedDigitsCount > 1 {
             switch formattingType {
             case .card:
@@ -113,7 +115,6 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                     return false
                 }
                 newString = (oldString as NSString).replacingCharacters(in: range, with: getValidatedString(with: code ?? "", pasted: string))
-                copiedDigitsCount = pastedDigitsCount
             }
 
         } else {
@@ -121,6 +122,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                !configureCursorLocation(updatedText: newString, currentText: oldString, with: range) {
                 return false
             }
+            
         }
 
         textField.text = newString.formatPhoneWithMask(mask: setNewMask())
@@ -130,7 +132,6 @@ extension JNumberMaskTextField: UITextFieldDelegate {
     }
     
     public func textFieldDidChangeSelection(_ textField: UITextField) {
-        
         getCurrentPosition(textField: textField)
         
         if textField.text?.isEmpty == true {
@@ -145,20 +146,26 @@ extension JNumberMaskTextField {
     private func getValidatedString(with countryCode: String, pasted string: String) -> String {
         let stringDigits = string.digits
         
+        let code = code ?? ""
+
         if stringDigits.count <= minPastedDigits {
+            copiedDigitsCount = stringDigits.count
             return stringDigits
             
-        } else if stringDigits.count < maxDigitLimit && stringDigits.hasPrefix(code ?? "") {
+        } else if stringDigits.count < maxDigitLimit && (stringDigits.hasPrefix(code) || stringDigits.hasPrefix("8")) {
+            copiedDigitsCount = minPastedDigits
             return String(stringDigits.suffix(minPastedDigits))
         }
-        
         return ""
     }
     
     private func configureCursorLocation(updatedText: String, currentText: String, with range: NSRange) -> Bool {
         var offset = 0
         
-        if updatedText.digits.count == maxDigitLimit {
+        let countryCode = code ?? ""
+        
+        if updatedText.digits.count == maxDigitLimit || (formattingType == .phone && !countryCode.isEmpty && (range.upperBound <= getInitialValue().count) && range.lowerBound < getInitialValue().count) {
+            currentCursorPosition = 3
             return false
             
         } else if currentText.count > updatedText.count {
@@ -179,17 +186,17 @@ extension JNumberMaskTextField {
         guard copiedDigitsCount > 0 else { return }
         
         let current = currentPosition
-        let next = currentPosition + pastedString.digits.count
-
+        let next = current + copiedDigitsCount
+    
         var additionalOffset = 0
-        for pos in current...next  {
+        for pos in current...next + 1  {
             if whitespacePositions.contains(pos) {
                 additionalOffset += 1
             }
         }
 
         let offset = next + additionalOffset
-
+        
         setCursorLocation(withOffset: offset)
         copiedDigitsCount = 0
     }

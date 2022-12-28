@@ -121,15 +121,9 @@ class PhoneNumberFormatterViewController: UIViewController {
         phoneTextField.text = nil
         phoneTextField.code = nil
         
-
         phoneTextField.code = phoneSwitch.isOn ? "7" : nil
-        
-        
     }
 }
 
 
-extension PhoneNumberFormatterViewController: UITextFieldDelegate {
-    
-    
-}
+extension PhoneNumberFormatterViewController: UITextFieldDelegate { }
