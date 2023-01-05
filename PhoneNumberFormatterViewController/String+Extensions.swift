@@ -8,11 +8,15 @@
 import Foundation
 
 public extension String {
-    
+
     var digits: String {
         return components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
     }
-    
+
+    var digitsSize: Int {
+        (components(separatedBy: CharacterSet.decimalDigits.inverted).joined()).count
+    }
+
     func formatPhoneWithMask(mask: String) -> String {
         let numbers = replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression)
         var index = numbers.startIndex // numbers iterator

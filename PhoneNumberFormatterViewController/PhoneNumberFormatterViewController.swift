@@ -31,13 +31,6 @@ class PhoneNumberFormatterViewController: UIViewController {
         field.placeholder = "Enter phone number"
         return field
     }()
-    private lazy var infoLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 27)
-        label.text = "Please switch on to set domestic country code"
-        label.textColor = .lightGray
-        return label
-    }()
     private lazy var customSegmentedControl: UISegmentedControl = {
         let items: [String] = ["byPhone", "byCard"]
         let segmented = UISegmentedControl(items: items)

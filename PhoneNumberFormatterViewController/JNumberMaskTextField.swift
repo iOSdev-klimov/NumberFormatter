@@ -126,6 +126,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
         }
 
         textField.text = newString.formatPhoneWithMask(mask: setNewMask())
+        
         setRemainingCursorMoveLeft(pastedString: string, currentPosition: currentCursorPosition)
         
         return false
@@ -161,11 +162,9 @@ extension JNumberMaskTextField {
     
     private func configureCursorLocation(updatedText: String, currentText: String, with range: NSRange) -> Bool {
         var offset = 0
-        
-        let countryCode = code ?? ""
-        
-        if updatedText.digits.count == maxDigitLimit || (formattingType == .phone && !countryCode.isEmpty && (range.upperBound <= getInitialValue().count) && range.lowerBound < getInitialValue().count) {
-            currentCursorPosition = 3
+
+        if updatedText.digits.count == maxDigitLimit || checkCursorLeftBoundary(using: range) {
+            offset = range.location
             return false
             
         } else if currentText.count > updatedText.count {
@@ -179,17 +178,18 @@ extension JNumberMaskTextField {
         }
         
         setCursorLocation(withOffset: offset)
+
         return true
     }
     
     private func setRemainingCursorMoveLeft(pastedString: String, currentPosition: Int) {
-        guard copiedDigitsCount > 0 else { return }
+        guard copiedDigitsCount >= 1 else { return }
         
         let current = currentPosition
         let next = current + copiedDigitsCount
     
         var additionalOffset = 0
-        for pos in current...next + 1  {
+        for pos in current...next {
             if whitespacePositions.contains(pos) {
                 additionalOffset += 1
             }
@@ -255,5 +255,12 @@ extension JNumberMaskTextField {
         DispatchQueue.main.async {
             self.selectedTextRange = self.textRange(from: startPosition, to: endPosition)
         }
+    }
+    
+    
+    private func checkCursorLeftBoundary(using range: NSRange) -> Bool {
+        let countryCode = code ?? ""
+        
+        return formattingType == .phone && !countryCode.isEmpty && range.upperBound <= getInitialValue().count && range.lowerBound < getInitialValue().count
     }
 }
