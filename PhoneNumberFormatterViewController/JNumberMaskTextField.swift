@@ -66,9 +66,7 @@ open class JNumberMaskTextField: UITextField {
             return ((code ?? "").digits.count) + minPastedDigits + 1
         }
     }
-    
-    private var isCursorupdated = true
-    
+
     init(type: NumberFormatterType) {
         formattingType = type
         super.init(frame: .zero)
@@ -98,7 +96,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
         let oldString = textField.text ?? ""
         var newString = (oldString as NSString).replacingCharacters(in: range, with: string)
         let pastedDigitsCount = string.digits.count
-
+        
         if pastedDigitsCount > 1 {
             switch formattingType {
             case .card:
@@ -108,7 +106,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                 }
                 newString = (oldString as NSString).replacingCharacters(in: range, with: string)
                 copiedDigitsCount = pastedDigitsCount
-                
+
             case .phone:
                 guard ((oldString.digits.count + pastedDigitsCount < maxDigitLimit) || pastedDigitsCount == maxDigitLimit - 1) else {
                     copiedDigitsCount = 0
@@ -122,17 +120,19 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                !configureCursorLocation(updatedText: newString, currentText: oldString, with: range) {
                 return false
             }
-            
         }
 
         textField.text = newString.formatPhoneWithMask(mask: setNewMask())
         
-        setRemainingCursorMoveLeft(pastedString: string, currentPosition: currentCursorPosition)
-        
+        if copiedDigitsCount > 1 {
+            secondOptionWith(pastedString: string, and: currentCursorPosition)
+        }
+
         return false
     }
     
     public func textFieldDidChangeSelection(_ textField: UITextField) {
+
         getCurrentPosition(textField: textField)
         
         if textField.text?.isEmpty == true {
@@ -182,22 +182,27 @@ extension JNumberMaskTextField {
         return true
     }
     
-    private func setRemainingCursorMoveLeft(pastedString: String, currentPosition: Int) {
-        guard copiedDigitsCount >= 1 else { return }
+    private func secondOptionWith(pastedString: String, and currentPosition: Int) {
+        let currentText = self.text ?? ""
         
-        let current = currentPosition
-        let next = current + copiedDigitsCount
-    
-        var additionalOffset = 0
-        for pos in current...next {
-            if whitespacePositions.contains(pos) {
-                additionalOffset += 1
+        var i = currentPosition
+        var j = 0
+        
+        
+        while j < pastedString.count && i <= currentText.count {
+            let index = pastedString.index(pastedString.startIndex, offsetBy: j)
+            let index2 = currentText.index(currentText.startIndex, offsetBy: i)
+            if pastedString[index] == currentText[index2] {
+                j += 1
+                i += 1
+            } else {
+                i += 1
             }
         }
-
-        let offset = next + additionalOffset
         
-        setCursorLocation(withOffset: offset)
+        let next = i
+        
+        setCursorLocation(withOffset: next)
         copiedDigitsCount = 0
     }
     
