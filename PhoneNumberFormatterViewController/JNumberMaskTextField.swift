@@ -23,10 +23,10 @@ open class JNumberMaskTextField: UITextField {
         }
     }
     
-    public var code: String? {
+    public var countryCode: String? {
         didSet {
             guard formattingType == .phone,
-                  let _ = code else {
+                  let _ = countryCode else {
                 return
             }
             whitespacePositions.removeAll()
@@ -63,7 +63,7 @@ open class JNumberMaskTextField: UITextField {
         case .card:
             return minPastedDigits + 1
         case .phone:
-            return ((code ?? "").digits.count) + minPastedDigits + 1
+            return ((countryCode ?? "").digits.count) + minPastedDigits + 1
         }
     }
 
@@ -112,7 +112,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                     copiedDigitsCount = 0
                     return false
                 }
-                newString = (oldString as NSString).replacingCharacters(in: range, with: getValidatedString(with: code ?? "", pasted: string))
+                newString = (oldString as NSString).replacingCharacters(in: range, with: getValidatedString(with: countryCode ?? "", pasted: string))
             }
 
         } else {
@@ -122,7 +122,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
             }
         }
 
-        textField.text = newString.formatPhoneWithMask(mask: setNewMask())
+        textField.text = newString.formatPhoneWithMask(mask: getNewMask())
         
         if copiedDigitsCount > 1 {
             secondOptionWith(pastedString: string, and: currentCursorPosition)
@@ -144,10 +144,8 @@ extension JNumberMaskTextField: UITextFieldDelegate {
 
 extension JNumberMaskTextField {
     
-    private func getValidatedString(with countryCode: String, pasted string: String) -> String {
+    private func getValidatedString(with code: String, pasted string: String) -> String {
         let stringDigits = string.digits
-        
-        let code = code ?? ""
 
         if stringDigits.count <= minPastedDigits {
             copiedDigitsCount = stringDigits.count
@@ -187,8 +185,7 @@ extension JNumberMaskTextField {
         
         var i = currentPosition
         var j = 0
-        
-        
+
         while j < pastedString.count && i <= currentText.count {
             let index = pastedString.index(pastedString.startIndex, offsetBy: j)
             let index2 = currentText.index(currentText.startIndex, offsetBy: i)
@@ -200,9 +197,9 @@ extension JNumberMaskTextField {
             }
         }
         
-        let next = i
+        let newOffset = i
         
-        setCursorLocation(withOffset: next)
+        setCursorLocation(withOffset: newOffset)
         copiedDigitsCount = 0
     }
     
@@ -217,7 +214,7 @@ extension JNumberMaskTextField {
     private func getInitialValue() -> String {
         let initialValue = ""
         
-        guard let countryCode = code else {
+        guard let countryCode = countryCode else {
             return initialValue
         }
         
@@ -229,7 +226,7 @@ extension JNumberMaskTextField {
         }
     }
     
-    private func setNewMask() -> String {
+    private func getNewMask() -> String {
         var updatedCode = ""
         if formattingType == .phone {
             updatedCode = getInitialValue().replacingOccurrences(of: "[0-9]", with: "X", options: .regularExpression)
@@ -243,7 +240,7 @@ extension JNumberMaskTextField {
     }
     
     private func setSpacePositions() {
-        setNewMask().enumerated().forEach { index, char in
+        getNewMask().enumerated().forEach { index, char in
             if separatorCharacters.contains(char) {
                 whitespacePositions.append(index)
                 
@@ -263,8 +260,9 @@ extension JNumberMaskTextField {
     }
     
     
+    // MARK: - try to implement in other way
     private func checkCursorLeftBoundary(using range: NSRange) -> Bool {
-        let countryCode = code ?? ""
+        let countryCode = countryCode ?? ""
         
         return formattingType == .phone && !countryCode.isEmpty && range.upperBound <= getInitialValue().count && range.lowerBound < getInitialValue().count
     }

@@ -112,9 +112,9 @@ class PhoneNumberFormatterViewController: UIViewController {
         
         phoneTextField.resignFirstResponder()
         phoneTextField.text = nil
-        phoneTextField.code = nil
+        phoneTextField.countryCode = nil
         
-        phoneTextField.code = phoneSwitch.isOn ? "7" : nil
+        phoneTextField.countryCode = phoneSwitch.isOn ? "7" : nil
     }
 }
 
