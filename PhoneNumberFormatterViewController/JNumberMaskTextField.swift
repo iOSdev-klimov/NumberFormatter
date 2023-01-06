@@ -17,21 +17,14 @@ open class JNumberMaskTextField: UITextField {
     
     public var maskString: String? {
         didSet {
-            whitespacePositions.removeAll()
-            bracketPositions.removeAll()
-            setSpacePositions()
+            reset()
         }
     }
     
     public var countryCode: String? {
         didSet {
-            guard formattingType == .phone,
-                  let _ = countryCode else {
-                return
-            }
-            whitespacePositions.removeAll()
-            bracketPositions.removeAll()
-            setSpacePositions()
+            guard formattingType == .phone, let _ = countryCode else { return }
+            reset()
         }
     }
     
@@ -112,7 +105,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                     copiedDigitsCount = 0
                     return false
                 }
-                newString = (oldString as NSString).replacingCharacters(in: range, with: getValidatedString(with: countryCode ?? "", pasted: string))
+                newString = (oldString as NSString).replacingCharacters(in: range, with: getValidString(with: countryCode ?? "", pasted: string))
             }
 
         } else {
@@ -125,7 +118,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
         textField.text = newString.formatPhoneWithMask(mask: getNewMask())
         
         if copiedDigitsCount > 1 {
-            secondOptionWith(pastedString: string, and: currentCursorPosition)
+            setRemainingPositions(pastedString: string, and: currentCursorPosition)
         }
 
         return false
@@ -144,22 +137,32 @@ extension JNumberMaskTextField: UITextFieldDelegate {
 
 extension JNumberMaskTextField {
     
-    private func getValidatedString(with code: String, pasted string: String) -> String {
+    private func reset() {
+        whitespacePositions.removeAll()
+        bracketPositions.removeAll()
+        setSpacePositions()
+    }
+    
+    private func getValidString(with code: String, pasted string: String) -> String {
         let stringDigits = string.digits
+        var validatedResult = ""
 
         if stringDigits.count <= minPastedDigits {
             copiedDigitsCount = stringDigits.count
-            return stringDigits
+            validatedResult = stringDigits
             
         } else if stringDigits.count < maxDigitLimit && (stringDigits.hasPrefix(code) || stringDigits.hasPrefix("8")) {
             copiedDigitsCount = minPastedDigits
-            return String(stringDigits.suffix(minPastedDigits))
+            validatedResult = String(stringDigits.suffix(minPastedDigits))
         }
-        return ""
+        return validatedResult
     }
     
     private func configureCursorLocation(updatedText: String, currentText: String, with range: NSRange) -> Bool {
         var offset = 0
+        
+        print("🟢Updated text", updatedText)
+        print("🔴Current text", currentText)
 
         if updatedText.digits.count == maxDigitLimit || checkCursorLeftBoundary(using: range) {
             offset = range.location
@@ -169,7 +172,8 @@ extension JNumberMaskTextField {
             offset = range.location
             
         } else if updatedText.count > currentText.count && isSpaceIncluded(within: range) {
-            offset = range.location + 2
+            let additionalOffset = getOffsetForSpaces(within: range)
+            offset = range.location + additionalOffset
             
         } else {
             offset = range.location + 1
@@ -180,13 +184,13 @@ extension JNumberMaskTextField {
         return true
     }
     
-    private func secondOptionWith(pastedString: String, and currentPosition: Int) {
+    private func setRemainingPositions(pastedString: String, and currentPosition: Int) {
         let currentText = self.text ?? ""
         
         var i = currentPosition
         var j = 0
 
-        while j < pastedString.count && i <= currentText.count {
+        while j < pastedString.count && i < currentText.count {
             let index = pastedString.index(pastedString.startIndex, offsetBy: j)
             let index2 = currentText.index(currentText.startIndex, offsetBy: i)
             if pastedString[index] == currentText[index2] {
@@ -237,6 +241,29 @@ extension JNumberMaskTextField {
     
     private func isSpaceIncluded(within range: NSRange) -> Bool {
         whitespacePositions.contains(range.location) || bracketPositions.contains(range.location)
+    }
+    
+    private func getOffsetForSpaces(within range: NSRange) -> Int {
+        var offset = 0
+        if bracketPositions.isEmpty {
+            if whitespacePositions.contains(range.location) {
+                offset = 2
+            }
+        } else {
+            if let lastOne = bracketPositions.last,
+               lastOne == range.location {
+                offset = 3
+            }
+            
+            if let firstOne = bracketPositions.first,
+               firstOne == range.location {
+                offset = 2
+    
+            }else {
+                offset = whitespacePositions.contains(range.location) ? 2 : offset
+            }
+        }
+        return offset
     }
     
     private func setSpacePositions() {

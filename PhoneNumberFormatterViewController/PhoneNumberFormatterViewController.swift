@@ -23,7 +23,7 @@ class PhoneNumberFormatterViewController: UIViewController {
     private lazy var phoneTextField: JNumberMaskTextField = {
         let field = JNumberMaskTextField(type: .phone)
         field.textColor = .lightGray
-        field.maskString = "XXX XXX XX XX"
+        field.maskString = "(XXX) XXX XX XX"
         field.font = .systemFont(ofSize: 27)
         field.keyboardType = .numberPad
         field.layer.borderColor = UIColor.orange.cgColor
