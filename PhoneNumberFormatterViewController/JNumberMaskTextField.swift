@@ -105,8 +105,7 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                 newString = (oldString as NSString).replacingCharacters(in: range, with: getValidString(with: countryCode ?? "", pasted: string))
             }
 
-        }
-        else {
+        } else {
             if range.location < oldString.count,
                !configureCursorLocation(updatedText: newString, currentText: oldString, with: range) {
                 return false
@@ -114,35 +113,33 @@ extension JNumberMaskTextField: UITextFieldDelegate {
         }
 
         textField.text = newString.formatPhoneWithMask(mask: getNewMask())
-        
+
+        getCurrentPosition(textField: textField)
+
         if string.digits.count > 1 {
             setRemainingPositions(pastedDigts: string.digits, and: currentCursorPosition)
         }
-
-        
 
         return false
     }
 
     public func textFieldDidChangeSelection(_ textField: UITextField) {
-        
+
         if textField.text?.isEmpty == true {
             textField.text = getInitialValue()
         }
-        
-        getCurrentPosition(textField: textField)
     }
 }
 
 
 extension JNumberMaskTextField {
-    
+
     private func reset() {
         whitespacePositions.removeAll()
         bracketPositions.removeAll()
         setSpacePositions()
     }
-    
+
     private func getValidString(with code: String, pasted string: String) -> String {
         let stringDigits = string.digits
         var validatedResult = ""
@@ -180,13 +177,8 @@ extension JNumberMaskTextField {
     }
     
     private func setRemainingPositions(pastedDigts: String, and currentPosition: Int) {
-        
-        guard pastedDigts.count > 1 else { return }
-        
         let currentText = self.text ?? ""
-        
-    
-        
+
         var i = currentPosition
         var j = 0
 
