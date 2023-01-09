@@ -87,27 +87,28 @@ extension JNumberMaskTextField: UITextFieldDelegate {
     public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         let oldString = textField.text ?? ""
         var newString = (oldString as NSString).replacingCharacters(in: range, with: string)
-        let pastedDigitsCount = string.digits.count
-        
-        if pastedDigitsCount > 1 {
+        let digitCount = string.digits.count
+
+        if digitCount > 1 {
+
             switch formattingType {
             case .card:
-                guard oldString.digits.count + pastedDigitsCount < maxDigitLimit else {
+                guard oldString.digitsSize + digitCount < maxDigitLimit else {
                     return false
                 }
                 newString = (oldString as NSString).replacingCharacters(in: range, with: string)
 
             case .phone:
-                guard ((oldString.digits.count + pastedDigitsCount < maxDigitLimit) || pastedDigitsCount == maxDigitLimit - 1) else {
+                guard ((oldString.digits.count + digitCount < maxDigitLimit) || digitCount == maxDigitLimit - 1) else {
                     setCursorLocation(withOffset: currentCursorPosition)
                     return false
                 }
-                newString = (oldString as NSString).replacingCharacters(in: range, with: getValidString(with: countryCode ?? "", pasted: string))
+                newString = (oldString as NSString).replacingCharacters(in: range,
+                                                                        with: getValidString(with: countryCode ?? "", pasted: string))
             }
 
         } else {
-            if range.location < oldString.count,
-               !configureCursorLocation(updatedText: newString, currentText: oldString, with: range) {
+               if !configureCursorLocation(updatedText: newString, currentText: oldString, with: range) {
                 return false
             }
         }
@@ -116,8 +117,8 @@ extension JNumberMaskTextField: UITextFieldDelegate {
 
         getCurrentPosition(textField: textField)
 
-        if string.digits.count > 1 {
-            setRemainingPositions(pastedDigts: string.digits, and: currentCursorPosition)
+        if digitCount > 1 {
+            setRemainingPositions(pastedDigits: string.digits, and: currentCursorPosition)
         }
 
         return false
@@ -176,24 +177,18 @@ extension JNumberMaskTextField {
         return true
     }
     
-    private func setRemainingPositions(pastedDigts: String, and currentPosition: Int) {
+    private func setRemainingPositions(pastedDigits: String, and currentPosition: Int) {
         let currentText = self.text ?? ""
 
-        var i = currentPosition
-        var j = 0
+        var offset = currentPosition
+        var i = 0
 
-        while j < pastedDigts.count && i < currentText.count {
-            let index = pastedDigts.index(pastedDigts.startIndex, offsetBy: j)
-            let index2 = currentText.index(currentText.startIndex, offsetBy: i)
-            if pastedDigts[index] == currentText[index2] {
-                j += 1
-                i += 1
-            } else {
-                i += 1
-            }
+        while offset < currentText.count && i < pastedDigits.count {
+            let index = pastedDigits.index(pastedDigits.startIndex, offsetBy: i)
+            let index2 = currentText.index(currentText.startIndex, offsetBy: offset)
+            i += pastedDigits[index] == currentText[index2] ? 1 : 0
+            offset += 1
         }
-        
-        let offset = i
 
         setCursorLocation(withOffset: offset)
     }
@@ -222,12 +217,12 @@ extension JNumberMaskTextField {
     }
     
     private func getNewMask() -> String {
-        var updatedCode = ""
+        var code = ""
         if formattingType == .phone {
-            updatedCode = getInitialValue().replacingOccurrences(of: "[0-9]", with: "X", options: .regularExpression)
+            code = getInitialValue().replacingOccurrences(of: "[0-9]", with: "X", options: .regularExpression)
         }
         
-        return updatedCode + (maskString ?? "")
+        return code + (maskString ?? "")
     }
     
     private func isSpaceIncluded(within range: NSRange) -> Bool {
@@ -256,6 +251,7 @@ extension JNumberMaskTextField {
                 offset = whitespacePositions.contains(range.location) ? 2 : offset
             }
         }
+
         return offset
     }
     
