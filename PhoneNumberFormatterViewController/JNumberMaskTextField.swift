@@ -108,7 +108,8 @@ extension JNumberMaskTextField: UITextFieldDelegate {
             }
 
         } else {
-               if !configureCursorLocation(updatedText: newString, currentText: oldString, with: range) {
+            if range.location < oldString.count,
+               !configureCursorLocation(updatedText: newString, currentText: oldString, with: range) {
                 return false
             }
         }
@@ -232,26 +233,22 @@ extension JNumberMaskTextField {
     private func getOffsetForSpaces(within range: NSRange) -> Int {
         var offset = 0
         if bracketPositions.isEmpty {
-            if whitespacePositions.contains(range.location) {
-                offset = 2
-            }
-
+            offset = whitespacePositions.contains(range.location) ? 2 : 0
+            
         } else {
             offset = !whitespacePositions.isEmpty ? 2 : offset
-            if let lastOne = bracketPositions.last,
-               lastOne == range.location {
-                offset += 1
-            }
+            
+            if let firstChar = bracketPositions.first,
+               firstChar == range.location { offset = 2 }
 
-            if let firstOne = bracketPositions.first,
-               firstOne == range.location {
-                offset = 2
-    
-            } else {
+            if let lastChar = bracketPositions.last,
+               lastChar == range.location { offset += 1 }
+            
+            else {
                 offset = whitespacePositions.contains(range.location) ? 2 : offset
             }
         }
-
+        
         return offset
     }
     
