@@ -89,13 +89,21 @@ extension JNumberMaskTextField: UITextFieldDelegate {
         var newString = (oldString as NSString).replacingCharacters(in: range, with: string)
         let digitCount = string.digits.count
 
+        if let startRange = textField.selectedTextRange?.start,
+           let endRange = textField.selectedTextRange?.end {
+            let len = self.offset(from: startRange, to: endRange)
+            
+            if len > 1 && string != countryCode ?? "" {
+                newString = getInitialValue()
+            }
+        }
+        
+
         if digitCount > 1 {
 
             switch formattingType {
             case .card:
-                guard oldString.digitsSize + digitCount < maxDigitLimit else {
-                    return false
-                }
+                guard oldString.digitsSize + digitCount < maxDigitLimit else { return false }
                 newString = (oldString as NSString).replacingCharacters(in: range, with: string)
 
             case .phone:
@@ -116,20 +124,20 @@ extension JNumberMaskTextField: UITextFieldDelegate {
 
         textField.text = newString.formatPhoneWithMask(mask: getNewMask())
 
-        getCurrentPosition(textField: textField)
-
         if digitCount > 1 {
             setRemainingPositions(pastedDigits: string.digits, and: currentCursorPosition)
         }
 
         return false
     }
-
+    
     public func textFieldDidChangeSelection(_ textField: UITextField) {
 
         if textField.text?.isEmpty == true {
-            textField.text = getInitialValue()
+            self.text = getInitialValue()
         }
+        
+        getCurrentPosition(textField: textField)
     }
 }
 
@@ -195,6 +203,7 @@ extension JNumberMaskTextField {
     }
     
     private func getCurrentPosition(textField: UITextField) {
+
         DispatchQueue.main.async {
             if let selectedRange = textField.selectedTextRange {
                 self.currentCursorPosition = textField.offset(from: textField.beginningOfDocument, to: selectedRange.end)
@@ -202,7 +211,7 @@ extension JNumberMaskTextField {
         }
     }
     
-    private func getInitialValue() -> String {
+    func getInitialValue() -> String {
         let initialValue = ""
         
         guard let countryCode = countryCode else {
@@ -232,6 +241,7 @@ extension JNumberMaskTextField {
     
     private func getOffsetForSpaces(within range: NSRange) -> Int {
         var offset = 0
+
         if bracketPositions.isEmpty {
             offset = whitespacePositions.contains(range.location) ? 2 : 0
             

@@ -7,6 +7,7 @@
 
 import UIKit
 
+
 class PhoneNumberFormatterViewController: UIViewController {
     
     private lazy var cardTextField: JNumberMaskTextField = {
@@ -29,6 +30,7 @@ class PhoneNumberFormatterViewController: UIViewController {
         field.layer.borderColor = UIColor.orange.cgColor
         field.layer.borderWidth = 2
         field.placeholder = "Enter phone number"
+        field.countryCode = "7"
         return field
     }()
     private lazy var customSegmentedControl: UISegmentedControl = {
@@ -86,9 +88,6 @@ class PhoneNumberFormatterViewController: UIViewController {
             field.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: isSwitchHidden ? 15 : 60),
             field.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -15)
         ])
-        
-        
-        
     }
     
     @objc private func segmentedTapped() {
