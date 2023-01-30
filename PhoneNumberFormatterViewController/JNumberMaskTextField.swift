@@ -23,7 +23,8 @@ open class JNumberMaskTextField: UITextField {
     
     public var countryCode: String? {
         didSet {
-            guard formattingType == .phone, let _ = countryCode else { return }
+            guard formattingType == .phone,
+                  let _ = countryCode else { return }
             reset()
         }
     }
@@ -89,15 +90,8 @@ extension JNumberMaskTextField: UITextFieldDelegate {
         var newString = (oldString as NSString).replacingCharacters(in: range, with: string)
         let digitCount = string.digits.count
 
-        if let startRange = textField.selectedTextRange?.start,
-           let endRange = textField.selectedTextRange?.end {
-            let len = self.offset(from: startRange, to: endRange)
-            
-            if len > 1 && string != countryCode ?? "" {
-                newString = getInitialValue()
-            }
-        }
         
+        newString = preventFromInvalidCountryCode(given: &newString, firstLetter: string)
 
         if digitCount > 1 {
 
@@ -112,7 +106,8 @@ extension JNumberMaskTextField: UITextFieldDelegate {
                     return false
                 }
                 newString = (oldString as NSString).replacingCharacters(in: range,
-                                                                        with: getValidString(with: countryCode ?? "", pasted: string))
+                                                                        with: getValidString(with: countryCode ?? "",
+                                                                                             pasted: string))
             }
 
         } else {
@@ -123,6 +118,8 @@ extension JNumberMaskTextField: UITextFieldDelegate {
         }
 
         textField.text = newString.formatPhoneWithMask(mask: getNewMask())
+        
+        getCurrentPosition(textField: textField)
 
         if digitCount > 1 {
             setRemainingPositions(pastedDigits: string.digits, and: currentCursorPosition)
@@ -130,14 +127,12 @@ extension JNumberMaskTextField: UITextFieldDelegate {
 
         return false
     }
-    
+   
     public func textFieldDidChangeSelection(_ textField: UITextField) {
 
         if textField.text?.isEmpty == true {
             self.text = getInitialValue()
         }
-        
-        getCurrentPosition(textField: textField)
     }
 }
 
@@ -200,6 +195,22 @@ extension JNumberMaskTextField {
         }
 
         setCursorLocation(withOffset: offset)
+    }
+    
+    private func preventFromInvalidCountryCode(given input: inout String, firstLetter: String) -> String {
+        guard formattingType == .phone,
+              let countryCode = countryCode else { return input }
+        
+        if let startRange = self.selectedTextRange?.start,
+           let endRange = self.selectedTextRange?.end {
+            let len = self.offset(from: startRange, to: endRange)
+
+            if len > 1 && firstLetter != countryCode {
+                input = String(input.digits.dropLast(1))
+            }
+        }
+        
+        return input
     }
     
     private func getCurrentPosition(textField: UITextField) {
@@ -281,8 +292,7 @@ extension JNumberMaskTextField {
             self.selectedTextRange = self.textRange(from: startPosition, to: endPosition)
         }
     }
-    
-    
+
     private func checkCursorLeftBoundary(using range: NSRange) -> Bool {
         let countryCode = countryCode ?? ""
         

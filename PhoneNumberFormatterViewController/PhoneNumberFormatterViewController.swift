@@ -18,19 +18,19 @@ class PhoneNumberFormatterViewController: UIViewController {
         field.layer.borderColor = UIColor.orange.cgColor
         field.layer.borderWidth = 2
         field.maskString = "XXXX XXXX XXXX XXXX"
+        field.delegate = self
         field.placeholder = "Enter card number"
         return field
     }()
     private lazy var phoneTextField: JNumberMaskTextField = {
         let field = JNumberMaskTextField(type: .phone)
         field.textColor = .lightGray
-        field.maskString = "XXX XXX XX XX"
+        field.maskString = "(XXX) XXX XX XX"
         field.font = .systemFont(ofSize: 27)
         field.keyboardType = .numberPad
         field.layer.borderColor = UIColor.orange.cgColor
         field.layer.borderWidth = 2
         field.placeholder = "Enter phone number"
-        field.countryCode = "7"
         return field
     }()
     private lazy var customSegmentedControl: UISegmentedControl = {
@@ -65,8 +65,6 @@ class PhoneNumberFormatterViewController: UIViewController {
         ])
         
         setupField(using: phoneTextField, isSwitchHidden: false)
-        
-        
     }
     
     private func setupField(using field: UITextField, isSwitchHidden: Bool) {
